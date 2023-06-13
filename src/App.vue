@@ -22,9 +22,12 @@
       <div class="kcal-history">
         <h2>Kcal history</h2>
         <ul>
-          <li v-for="kcal in data" :key="kcal">
-            <span>{{ data.kcal }}kcal</span>
-            <small>{{ new Date(data.date).toLocaleDateString() }}</small>
+          <li v-for="kcal in kcals" :key="kcal.date">
+            <span>{{ kcal.kcal }}kcal</span>
+            <small>{{ new Date(kcal.date).toLocaleDateString() }}</small>
+            <button class="delete__button">
+              <img src="./images/trash-outline.svg" class="delete__image" />
+            </button>
           </li>
         </ul>
       </div>
@@ -34,7 +37,7 @@
 
 <script setup>
 import { ref, shallowRef, watch, computed, nextTick, onMounted } from 'vue';
-import Chart from 'chart.js/auto';
+import { Chart, LineElement } from 'chart.js/auto';
 
 const kcals = ref([]);
 
@@ -55,7 +58,9 @@ const addKcal = () => {
     kcal: kcalInput.value,
     date: new Date().getTime(),
   });
+  data.value = kcals.value;
   postData(kcals.value);
+  console.log(data.value, kcals.value);
 };
 
 async function postData(data) {
@@ -75,7 +80,6 @@ async function postData(data) {
   }
 
   data.value = responseData;
-  console.log(data);
 }
 
 async function getData() {
@@ -93,8 +97,9 @@ async function getData() {
     const error = new Error(responseData.message || 'Failed to send request.');
     throw error;
   }
+
   data.value = responseData;
-  console.log(data);
+  kcals.value = data.value;
 }
 
 onMounted(() => {
@@ -259,8 +264,8 @@ form input[type='submit']:hover {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem;
-  cursor: pointer;
 }
+
 .kcal-history ul li:nth-child(even) {
   background-color: #dfdfdf;
 }
@@ -279,5 +284,20 @@ form input[type='submit']:hover {
 .kcal-history ul li small {
   color: #888;
   font-style: italic;
+}
+
+.delete__image {
+  width: 20px;
+  height: 20px;
+}
+
+.delete__button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.delete__image:hover {
+  opacity: 0.5;
 }
 </style>
