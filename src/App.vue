@@ -1,5 +1,39 @@
+<template>
+  <main>
+    <h1>Kcal Tracker</h1>
+
+    <div class="current">
+      <span>{{ currentKcal.kcal }}</span>
+      <small>Current kcal</small>
+    </div>
+
+    <form @submit.prevent="addKcal()">
+      <input type="number" step="50" v-model="kcalInput" />
+      <input type="submit" value="Add kcal" />
+    </form>
+
+    <div v-if="kcals && kcals.length > 0">
+      <h2>Last 7 days</h2>
+
+      <div class="canvas-box">
+        <canvas ref="kcalChartEl"></canvas>
+      </div>
+
+      <div class="kcal-history">
+        <h2>Kcal history</h2>
+        <ul>
+          <li v-for="kcal in data" :key="kcal">
+            <span>{{ data.kcal }}kcal</span>
+            <small>{{ new Date(data.date).toLocaleDateString() }}</small>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </main>
+</template>
+
 <script setup>
-import { ref, shallowRef, watch, computed, nextTick } from 'vue';
+import { ref, shallowRef, watch, computed, nextTick, onMounted } from 'vue';
 import Chart from 'chart.js/auto';
 
 const kcals = ref([]);
@@ -14,12 +48,58 @@ const currentKcal = computed(() => {
   return kcals.value.sort((a, b) => b.date - a.date)[0] || { kcal: 0 };
 });
 
+const data = ref([]);
+
 const addKcal = () => {
   kcals.value.push({
     kcal: kcalInput.value,
     date: new Date().getTime(),
   });
+  postData(kcals.value);
 };
+
+async function postData(data) {
+  const response = await fetch(
+    'https://kcal-track-default-rtdb.europe-west1.firebasedatabase.app/values.json',
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  );
+
+  const responseData = await response.json();
+
+  if (!response.ok) {
+    const error = new Error(responseData.message || 'Failed to send request');
+    throw error;
+  }
+
+  data.value = responseData;
+  console.log(data);
+}
+
+async function getData() {
+  const response = await fetch(
+    'https://kcal-track-default-rtdb.europe-west1.firebasedatabase.app/values.json',
+    {
+      method: 'GET',
+      body: JSON.stringify(),
+    }
+  );
+
+  const responseData = await response.json();
+
+  if (!response.ok) {
+    const error = new Error(responseData.message || 'Failed to send request.');
+    throw error;
+  }
+  data.value = responseData;
+  console.log(data);
+}
+
+onMounted(() => {
+  getData();
+});
 
 watch(
   kcals,
@@ -70,40 +150,6 @@ watch(
   { deep: true }
 );
 </script>
-
-<template>
-  <main>
-    <h1>Kcal Tracker</h1>
-
-    <div class="current">
-      <span>{{ currentKcal.kcal }}</span>
-      <small>Current kcal</small>
-    </div>
-
-    <form @submit.prevent="addKcal()">
-      <input type="number" step="50" v-model="kcalInput" />
-      <input type="submit" value="Add kcal" />
-    </form>
-
-    <div v-if="kcals && kcals.length > 0">
-      <h2>Last 7 days</h2>
-
-      <div class="canvas-box">
-        <canvas ref="kcalChartEl"></canvas>
-      </div>
-
-      <div class="kcal-history">
-        <h2>Kcal history</h2>
-        <ul>
-          <li v-for="kcal in kcals" :key="kcal">
-            <span>{{ kcal.kcal }}kcal</span>
-            <small>{{ new Date(kcal.date).toLocaleDateString() }}</small>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </main>
-</template>
 
 <style>
 * {
