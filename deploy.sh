@@ -1,6 +1,6 @@
 npm run build
 
-gut add dist -f
+git add dist -f
 
 git commit -m "deploy"
 
