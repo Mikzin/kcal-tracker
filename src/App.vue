@@ -22,10 +22,10 @@
       <div class="kcal-history">
         <h2>Kcal history</h2>
         <ul>
-          <li v-for="kcal in kcals" :key="kcal.date">
+          <li v-for="(kcal, index) in kcals" :key="kcal.date">
             <span>{{ kcal.kcal }}kcal</span>
             <small>{{ new Date(kcal.date).toLocaleDateString() }}</small>
-            <button class="delete__button">
+            <button class="delete__button" @click="deleteKcal(index)">
               <img src="./images/trash-outline.svg" class="delete__image" />
             </button>
           </li>
@@ -37,9 +37,9 @@
 
 <script setup>
 import { ref, shallowRef, watch, computed, nextTick, onMounted } from 'vue';
-import { Chart, LineElement } from 'chart.js/auto';
+import Chart from 'chart.js/auto';
 
-const kcals = ref([]);
+const kcals = ref(null);
 
 const kcalChartEl = ref(null);
 
@@ -48,19 +48,30 @@ const kcalChart = shallowRef(null);
 const kcalInput = ref(1500);
 
 const currentKcal = computed(() => {
-  return kcals.value.sort((a, b) => b.date - a.date)[0] || { kcal: 0 };
+  const sortedKcals = kcals.value || [];
+
+  return sortedKcals.sort((a, b) => b.date - a.date)[0] || { kcal: 0 };
 });
 
 const data = ref([]);
 
 const addKcal = () => {
+  if (kcals.value === null || kcals.value === undefined) {
+    kcals.value = [];
+  }
+
   kcals.value.push({
     kcal: kcalInput.value,
     date: new Date().getTime(),
   });
   data.value = kcals.value;
   postData(kcals.value);
-  console.log(data.value, kcals.value);
+};
+
+const deleteKcal = (index) => {
+  kcals.value.splice(index, 1);
+  data.value = kcals.value;
+  postData(kcals.value);
 };
 
 async function postData(data) {
@@ -98,6 +109,7 @@ async function getData() {
     throw error;
   }
 
+  kcals.value = [];
   data.value = responseData;
   kcals.value = data.value;
 }
@@ -109,48 +121,55 @@ onMounted(() => {
 watch(
   kcals,
   (newKcals) => {
-    const kc = [...newKcals];
+    if (newKcals !== null && newKcals !== undefined) {
+      const kc = newKcals.map((kcal) => ({ ...kcal }));
 
-    if (kcalChart.value) {
-      kcalChart.value.data.labels = kc
-        .sort((a, b) => a.date - b.date)
-        .map((k) => new Date(k.date).toLocaleDateString())
-        .slice(-7);
+      if (kcalChart.value !== null) {
+        if (kcalChart.value) {
+          kcalChart.value.destroy();
+          kcalChart.value = null;
 
-      kcalChart.value.data.datasets[0].data = kc
-        .sort((a, b) => a.date - b.date)
-        .map((k) => k.kcal)
-        .slice(-7);
-
-      kcalChart.value.update();
-
-      return;
-    }
-
-    nextTick(() => {
-      kcalChart.value = new Chart(kcalChartEl.value.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: kc
+          kcalChart.value.data.labels = kc
             .sort((a, b) => a.date - b.date)
-            .map((k) => new Date(k.date).toLocaleDateString()),
-          datasets: [
-            {
-              label: 'kcal',
-              data: kc.sort((a, b) => a.date - b.date).map((k) => k.kcal),
-              backgroundColor: 'rgba(255,105,180, 0.2)',
-              borderColor: 'rgb(255,105,180)',
-              borderWidth: 1,
-              fill: true,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-        },
+            .map((k) => new Date(k.date).toLocaleDateString())
+            .slice(-7);
+
+          kcalChart.value.data.datasets[0].data = kc
+            .sort((a, b) => a.date - b.date)
+            .map((k) => k.kcal)
+            .slice(-7);
+
+          kcalChart.value.update();
+
+          return;
+        }
+      }
+
+      nextTick(() => {
+        kcalChart.value = new Chart(kcalChartEl.value.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: kc
+              .sort((a, b) => a.date - b.date)
+              .map((k) => new Date(k.date).toLocaleDateString()),
+            datasets: [
+              {
+                label: 'kcal',
+                data: kc.sort((a, b) => a.date - b.date).map((k) => k.kcal),
+                backgroundColor: 'rgba(255,105,180, 0.2)',
+                borderColor: 'rgb(255,105,180)',
+                borderWidth: 1,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+          },
+        });
       });
-    });
+    }
   },
   { deep: true }
 );
