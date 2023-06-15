@@ -124,50 +124,39 @@ watch(
     if (newKcals !== null && newKcals !== undefined) {
       const kc = newKcals.map((kcal) => ({ ...kcal }));
 
-      if (kcalChart.value !== null) {
-        if (kcalChart.value) {
-          kcalChart.value.destroy();
-          kcalChart.value = null;
-
-          kcalChart.value.data.labels = kc
-            .sort((a, b) => a.date - b.date)
-            .map((k) => new Date(k.date).toLocaleDateString())
-            .slice(-7);
-
-          kcalChart.value.data.datasets[0].data = kc
-            .sort((a, b) => a.date - b.date)
-            .map((k) => k.kcal)
-            .slice(-7);
-
-          kcalChart.value.update();
-
-          return;
-        }
-      }
-
       nextTick(() => {
-        kcalChart.value = new Chart(kcalChartEl.value.getContext('2d'), {
-          type: 'line',
-          data: {
-            labels: kc
-              .sort((a, b) => a.date - b.date)
-              .map((k) => new Date(k.date).toLocaleDateString()),
-            datasets: [
-              {
-                label: 'kcal',
-                data: kc.sort((a, b) => a.date - b.date).map((k) => k.kcal),
-                backgroundColor: 'rgba(255,105,180, 0.2)',
-                borderColor: 'rgb(255,105,180)',
-                borderWidth: 1,
-                fill: true,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-          },
-        });
+        if (kcalChartEl.value) {
+          if (kcalChart.value) {
+            kcalChart.value.destroy();
+          }
+
+          kcalChart.value = new Chart(kcalChartEl.value.getContext('2d'), {
+            type: 'line',
+            data: {
+              labels: kc
+                .sort((a, b) => a.date - b.date)
+                .map((k) => new Date(k.date).toLocaleDateString())
+                .slice(-7),
+              datasets: [
+                {
+                  label: 'kcal',
+                  data: kc
+                    .sort((a, b) => a.date - b.date)
+                    .map((k) => k.kcal)
+                    .slice(-7),
+                  backgroundColor: 'rgba(255,105,180, 0.2)',
+                  borderColor: 'rgb(255,105,180)',
+                  borderWidth: 1,
+                  fill: true,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+            },
+          });
+        }
       });
     }
   },
